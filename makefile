@@ -4,7 +4,6 @@ CC      := g++
 AR := ar rc
 
 # args
-BITS = 32
 
 #以下是指定需要的库文件 -L
 LIBS    := -lrt
@@ -27,11 +26,7 @@ OBJS    := $(SRCS:.cpp=.o)
 CFLAGS  := -g -Wall -c $(INCLUDE) $(LIBPATH) 
 CFLAGS  += -DLINUX 
 
-ifeq ($(BITS),64)
-	TARGETLIB := libmdrcfg64.a
-else
-	TARGETLIB := libmdrcfg.a
-endif
+TARGETLIB := libmdrcfg.a
 
 all:
 	$(CC) $(CFLAGS) $(SRCS) $(LIBS)

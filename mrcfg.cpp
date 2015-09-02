@@ -1,4 +1,5 @@
 #include "mrcfg.h"
+#define  max_line_length 512
 
 char * trim(char * dst, const char * src, int slen = -1){
 
@@ -43,8 +44,8 @@ bool begin(const char * src, char ch){
 char* GetIniSectionItem(const char* filename,const char* sect,const char* key,char * out)  
 {  
 
-	char temp[256] = {0};
-	char linebuf[256] = {0};
+	char temp[max_line_length] = {0};
+	char linebuf[max_line_length] = {0};
 
 	bool skip = false;
 
@@ -56,7 +57,7 @@ char* GetIniSectionItem(const char* filename,const char* sect,const char* key,ch
 		return NULL;  
 	}  
 
-	while(skip || fgets(linebuf,256,f))
+	while(skip || fgets(linebuf, sizeof(linebuf), f))
 	{
 		//compare the section
 
@@ -69,7 +70,7 @@ char* GetIniSectionItem(const char* filename,const char* sect,const char* key,ch
 		}
 
 		//get key
-		while(fgets(linebuf,256,f)){
+		while(fgets(linebuf, sizeof(linebuf), f)){
 
 			//it is a session, break;
 			if (begin(linebuf,'[')){
@@ -118,10 +119,10 @@ bool GetIniSectionItemInt(const char* filename,const char* sect,const char* key,
 	return false;
 }
 
-char** GetIniItemTable(const char* filename,const char* sect, int & count)
+
+char** GetIniItemTable(const char* filename, const char* sect, int&count, int maxcount /* = 1024*/)
 {
 	count = 0;
-
 	char section[64] = {0};
 	sprintf(section,"[%s]",sect);  
 
@@ -129,26 +130,30 @@ char** GetIniItemTable(const char* filename,const char* sect, int & count)
 	if(!f)  {  
 		return NULL;  
 	}
-	
-	char linebuf[256] = {0};
+
+	bool find = false;
+	char linebuf[max_line_length] = {0};
+
 
 	//compare the section
-	while(fgets(linebuf,256,f))
+	while(fgets(linebuf, sizeof(linebuf), f))
 	{
 		//get section
 		if(begin(linebuf,'[') &&   //not begin with '['
 		   strstr(linebuf, section)){ // not has the section
+			find = true;
 			break;
 		}
 	}
 
-	bool find = false;
-	int max = 1024;
-	char ** items = (char**)malloc(max);
+	if(!find){return NULL;}
+
+	int max = maxcount;
+	char ** items = (char**)malloc(max * sizeof(char*));
 	memset(items, 0 , max);
 
 	//get {
-	while(fgets(linebuf,256,f)){
+	while(fgets(linebuf, sizeof(linebuf), f)){
 		
 		//it is comment
 		if(begin(linebuf,'#') || 
@@ -158,24 +163,20 @@ char** GetIniItemTable(const char* filename,const char* sect, int & count)
 			continue;
 		}
 
-		if(begin(linebuf, '{')){
-			find = true;
-			continue;
-		}
-
-		if(!find){
-			continue;
-		}
-
-		if(begin(linebuf, '}')){
+		//next section
+		if(begin(linebuf, '[')){
 			break;
 		}
 
-		if(count <= max){
-			char *item = (char*)malloc(256);
-			trim(item, linebuf);
-			items[count++] = item;
+		//too much
+		if(count >= max){
+			break;
 		}
+		
+		char *item = (char*)malloc(max_line_length);
+		trim(item, linebuf);
+		items[count++] = item;
+
 	}
 	fclose(f);
 	return items;

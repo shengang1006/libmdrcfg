@@ -20,7 +20,8 @@ bool GetIniSectionItemInt(const char* filename,const char* sect,const char* key,
 	
 }
 */
-char** GetIniItemTable(const char* filename, const char* sect, int&count);
+
+char** GetIniItemTable(const char* filename, const char* sect, int&count, int maxcount = 1024);
 
 
 int APHash(char * key);
